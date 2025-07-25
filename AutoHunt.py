@@ -29,6 +29,12 @@ def drawGrid(app):
                           size = 36, bold = True)
 
 def onKeyPress(app, key):
+    if key == 'backspace' and app.currentCell > 0:
+        app.currentCell -= 1
+        row = app.currentCell // app.cols
+        col = app.currentCell % app.cols
+        app.grid[row][col] = ''
+
     if len(key) == 1 and key.isalpha() and app.currentCell < app.gridSize:
         row = app.currentCell // app.cols
         col = app.currentCell % app.cols
