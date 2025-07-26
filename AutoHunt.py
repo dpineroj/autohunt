@@ -20,8 +20,11 @@ def onAppStart(app):
     app.mode = 'input'
 
     app.stepsPerSecond = 10
-    app.preCountdownSteps = 0
-    app.countdown = 3
+    app.preCountdownSteps = 0 #time buffer
+    app.countdown = 3 #before word visualization starts
+
+    #temp word set to test with
+    app.wordSet = {'CAR', 'CARD', 'CARS', 'SCAR', 'ARC', 'RACE', 'ACE', 'CASE'}
 
 
 
@@ -52,17 +55,18 @@ def onKeyPress(app, key):
             app.currentCell += 1
 
             if app.currentCell == app.gridSize:
-                app.mode = 'preCountdown'
+                app.mode = 'preCountdown' #time buffer before countdown
 
 def onStep(app):
-    if app.mode == 'preCountdown':
+    if app.mode == 'preCountdown': #delay 0.5s befire countdown
         app.preCountdownSteps += 1
         if app.preCountdownSteps >= 5:
             app.mode = 'countdown'
-            app.stepsPerSecond = 1
+            app.stepsPerSecond = 1 
     elif app.mode == 'countdown':
         app.countdown -= 1
         if app.countdown == 0:
+            findAllWords(app)
             app.mode = 'animate'
 
 
@@ -77,6 +81,29 @@ def redrawAll(app):
     if app.mode == 'countdown':
         drawLabel(app.countdown, app.width // 2, app.height // 1.05, 
                   size = 24)
+
+def findAllWords(app):
+    app.validWords = []
+    for row in range(app.rows):
+        for col in range(app.cols):
+            visited = set()
+            backtrack(app, row, col, '', visited)
+
+def backtrack(app, row, col, path, visited):
+    if not (0 <= row < app.rows and 0 <= col < app.cols):
+        return
+    if (row, col) in visited:
+        return
+
+    path += app.grid[row][col]
+    visited = visited | {(row, col)}
+    if len(path) > 1 and path in app.wordSet:
+        app.validWords.append((path, visited | {(row, col)})) 
+
+    for dr in [-1, 0, 1]:
+        for dc in [-1, 0, 1]:
+            if dr != 0 or dc != 0:
+                backtrack(app, row + dr, col + dc, path, visited)
 
 runApp(width = 500, height = 500)
 
