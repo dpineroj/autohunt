@@ -8,6 +8,7 @@
 from cmu_graphics import *
 
 
+
 def onAppStart(app):
     app.rows, app.cols = 4, 4
     app.cellSize = 100
@@ -23,13 +24,24 @@ def onAppStart(app):
     app.preCountdownSteps = 0 #time buffer
     app.countdown = 3 #before word visualization starts
 
-    #temp word set to test with
-    app.wordSet = {'CAR', 'CARD', 'CARS', 'SCAR', 'ARC', 'RACE', 'ACE', 'CASE'}
+    #text file of all english words found on github: 
+    #https://github.com/dwyl/english-words/blob/master/words.txt
+    wordList = loadWords('words.txt') 
+    app.treeRoot = buildTree(wordList)
+
     app.validWords = []
     app.currentWordIndex = 0
     app.wordStep = 0
     app.segmentDelaySteps = 0
     app.wordDelaySteps = 0
+
+#learned how to open text files in read mode on stackoverflow:
+#https://stackoverflow.com/questions/30969687/use-python-to-open-a-file-in-read-mode
+def loadWords(path): 
+    with open(path, 'r') as f:
+        words = [line.strip().upper() for line in f if len(line.strip()) > 2 \
+                 and line.strip().isalpha()]
+    return words
 
 def drawGrid(app):
     for row in range(app.rows):
@@ -136,38 +148,56 @@ def drawWordPath(app, path, step):
 
 def findAllWords(app):
     app.validWords = []
-    seenWords = set()
+    app.foundWords = set()
     for row in range(app.rows):
         for col in range(app.cols):
-            visited = set()
-            backtrack(app, row, col, '', [], visited, seenWords)
-    print(f"done search: {len(app.validWords)} valid words found ")
+            backtrack(app, row, col, app.treeRoot, [], set(), "")
 
-def backtrack(app, row, col, wordsSoFar, path, visited, seenWords):
+def backtrack(app, row, col, node, path, visited, wordsSoFar):
     if not (0 <= row < app.rows and 0 <= col < app.cols):
         return
     if (row, col) in visited:
         return
     
     letter = app.grid[row][col]
-    if not letter:
+    if not letter or letter not in node.children:
         return
+    
+    node = node.children[letter]
     wordsSoFar += letter
     path.append((row, col))
     visited.add((row, col))
 
-    if len(wordsSoFar) > 1 and wordsSoFar in app.wordSet:
-        if wordsSoFar not in seenWords:
-            app.validWords.append((wordsSoFar, path.copy()))
-            seenWords.add(wordsSoFar)
+    if node.isWord and wordsSoFar not in app.foundWords:
+        app.validWords.append((wordsSoFar, path.copy()))
+        app.foundWords.add(wordsSoFar)
     
     for dr in [-1, 0, 1]:
         for dc in [-1, 0, 1]:
             if not (dr == 0 and dc == 0):
-                backtrack(app, row + dr, col + dc, wordsSoFar, path, visited, seenWords)
+                backtrack(app, row + dr, col + dc, node, path,
+                          visited, wordsSoFar)
     
     path.pop()
     visited.remove((row, col))
+
+#replicated tree structure from cmu module
+class TreeNode:
+    def __init__(self):
+        self.children = dict()
+        self.isWord = False
+
+
+def buildTree(wordList):
+    root = TreeNode()
+    for word in wordList:
+        node = root
+        for letter in word:
+            if letter not in node.children:
+                node.children[letter] = TreeNode()
+            node = node.children[letter]
+        node.isWord = True
+    return root
 
 
 runApp(width = 500, height = 500)
