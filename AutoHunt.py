@@ -157,10 +157,9 @@ def backtrack(app, row, col, wordsSoFar, path, visited, seenWords):
     visited.add((row, col))
 
     if len(wordsSoFar) > 1 and wordsSoFar in app.wordSet:
-        key = (wordsSoFar, tuple(path))
-        if key not in seenWords:
+        if wordsSoFar not in seenWords:
             app.validWords.append((wordsSoFar, path.copy()))
-            seenWords.add(key)
+            seenWords.add(wordsSoFar)
     
     for dr in [-1, 0, 1]:
         for dc in [-1, 0, 1]:
