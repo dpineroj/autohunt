@@ -22,7 +22,7 @@ def onAppStart(app):
 
     #text file of all english words found on stack exchange:
     #https://boardgames.stackexchange.com/questions/38366/latest-collins-scrabble-words-list-in-text-file
-    
+
     wordList = loadWords('words.txt') 
     app.treeRoot = buildTree(wordList)
 
@@ -106,7 +106,6 @@ def getGridPosition(app, index):
     return index // app.cols, index % app.cols
 
 def redrawAll(app):
-    drawLabel(f"mode: {app.mode}", 250, 480)
     drawLabel("Auto Hunt Beta", app.width // 2, 20, size = 20)
     drawGrid(app)
 
@@ -128,6 +127,8 @@ def drawWordPath(app, path, step):
             x2 = app.gridLeft + c2 * app.cellSize + app.cellSize // 2
             y2 = app.gridTop + r2 * app.cellSize + app.cellSize // 2
             drawLine(x1, y1, x2, y2, fill = 'red', lineWidth = 4)
+    
+
 
 def findAllWords(app):
     app.validWords = []
@@ -135,6 +136,13 @@ def findAllWords(app):
     for row in range(app.rows):
         for col in range(app.cols):
             backtrack(app, row, col, app.treeRoot, [], set(), "")
+    
+    n = len(app.validWords)
+    for i in range(n):
+        for j in range(i + 1, n):
+            if len(app.validWords[j][0]) > len(app.validWords[i][0]):
+                app.validWords[i], app.validWords[j] = \
+                app.validWords[j], app.validWords[i]
 
 def backtrack(app, row, col, node, path, visited, wordsSoFar):
     if not (0 <= row < app.rows and 0 <= col < app.cols):
@@ -169,7 +177,6 @@ class TreeNode:
     def __init__(self):
         self.children = dict()
         self.isWord = False
-
 
 def buildTree(wordList):
     root = TreeNode()
