@@ -2,12 +2,8 @@
 #Andrew ID: dpineroj
 #Section: D, Summer 2025
 #Term Project: AutoHunt - Word Hunt Checker and Visualizer
-#24.8.25
-
-
+#28.8.25
 from cmu_graphics import *
-
-
 
 def onAppStart(app):
     app.rows, app.cols = 4, 4
@@ -24,8 +20,9 @@ def onAppStart(app):
     app.preCountdownSteps = 0 #time buffer
     app.countdown = 3 #before word visualization starts
 
-    #text file of all english words found on github: 
-    #https://github.com/dwyl/english-words/blob/master/words.txt
+    #text file of all english words found on stack exchange:
+    #https://boardgames.stackexchange.com/questions/38366/latest-collins-scrabble-words-list-in-text-file
+    
     wordList = loadWords('words.txt') 
     app.treeRoot = buildTree(wordList)
 
@@ -70,11 +67,9 @@ def onKeyPress(app, key):
             app.currentCell += 1
 
             if app.currentCell == app.gridSize:
-                print('all letters entered')
                 app.mode = 'preCountdown' #time buffer before countdown
 
 def onStep(app):
-    print(f"mode = {app.mode}")
     if app.mode == 'preCountdown': #delay 0.5s befire countdown
         app.preCountdownSteps += 1
         if app.preCountdownSteps >= 5:
@@ -82,20 +77,12 @@ def onStep(app):
             app.stepsPerSecond = 1 
     elif app.mode == 'countdown':
         app.countdown -= 1
-        print(f"countdown now: {app.countdown}")
         if app.countdown == 0:
-            print("countdown complete")
             findAllWords(app)
-            print("valid words and paths")
-            for word, path in app.validWords:
-                print(f"{word}: {path}")
             app.mode = 'animate'
-            print(f"Found {len(app.validWords)} words")
             app.stepsPerSecond = 2 #0.5s per step
     if app.mode == 'animate':
-        print(f"IN ANIMATE MODE - index: {app.currentWordIndex}, total: {len(app.validWords)}")
         if app.currentWordIndex >= len(app.validWords):
-            print('no more words - switching to done mode')
             app.mode = 'done'
             return
         
@@ -113,8 +100,6 @@ def onStep(app):
                 app.wordStep = 0
                 app.wordDelaySteps = 0
                 app.segmentDelaySteps = 0
-
-
 
 #convert linear index to (row, col) coordinates
 def getGridPosition(app, index):
@@ -134,7 +119,6 @@ def redrawAll(app):
         drawWordPath(app, path, app.wordStep)
 
 def drawWordPath(app, path, step):
-    print(f"drawing word step {step} of path {path}")
     for i in range(step):
         if i < len(path) - 1:
             r1, c1 = path[i]
@@ -143,7 +127,6 @@ def drawWordPath(app, path, step):
             y1 = app.gridTop + r1 * app.cellSize + app.cellSize // 2
             x2 = app.gridLeft + c2 * app.cellSize + app.cellSize // 2
             y2 = app.gridTop + r2 * app.cellSize + app.cellSize // 2
-            print(f"drawing line from {path[i]} to {path[i + 1]}")
             drawLine(x1, y1, x2, y2, fill = 'red', lineWidth = 4)
 
 def findAllWords(app):
@@ -198,7 +181,6 @@ def buildTree(wordList):
             node = node.children[letter]
         node.isWord = True
     return root
-
 
 runApp(width = 500, height = 500)
 
