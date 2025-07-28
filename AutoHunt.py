@@ -159,6 +159,8 @@ def backtrack(app, row, col, node, path, visited, wordsSoFar):
     path.append((row, col))
     visited.add((row, col))
 
+    assert len(set(path)) == len(path), f"BUG: revisted cell in path {path}"
+
     if node.isWord and wordsSoFar not in app.foundWords:
         app.validWords.append((wordsSoFar, path.copy()))
         app.foundWords.add(wordsSoFar)
