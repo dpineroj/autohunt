@@ -1,19 +1,21 @@
 #Name: David Pinero-Jacome
 #Andrew ID: dpineroj
-#Section: D, Summer 2025
-#Term Project: AutoHunt - Word Hunt Checker and Visualizer
+#utoHunt - Word Hunt Checker and Visualizer
 #28.8.25
 from cmu_graphics import *
 
 def onAppStart(app):
     app.rows, app.cols = 4, 4
-    app.cellSize = 100
-    app.gridLeft = 50
-    app.gridTop = 50
-    #create 4x4 empty letter grid
-    app.grid = [['' for _ in range(app.cols)] for _ in range(app.rows)]
+    app.gridMargin =50
+    app.cellSize = min((app.width - 2 * app.gridMargin) // app.cols,
+                        (app.height - 200) // app.rows)
+    app.gridLeft = (app.width - app.cellSize * app.cols) // 2
+    app.gridTop = 100
     app.currentCell = 0
     app.gridSize = app.rows * app.cols
+    app.grid = [['' for _ in range(app.cols)] for _ in range(app.rows)]
+ 
+
     app.mode = 'input'
 
     app.stepsPerSecond = 10
@@ -25,13 +27,18 @@ def onAppStart(app):
 
     wordList = loadWords('words.txt') 
     app.treeRoot = buildTree(wordList)
-
     app.validWords = []
     app.currentWordIndex = 0
     app.wordStep = 0
     app.segmentDelaySteps = 0
     app.wordDelaySteps = 0
 
+def onResize(app):
+    app.cellSize = min((app.width - 2 * app.gridMargin) // app.cols,
+                        (app.height - 200) // app.rows)
+    app.gridLeft = (app.width - app.cellSize * app.cols) // 2
+
+    
 #learned how to open text files in read mode on stackoverflow:
 #https://stackoverflow.com/questions/30969687/use-python-to-open-a-file-in-read-mode
 def loadWords(path): 
@@ -51,8 +58,9 @@ def drawGrid(app):
             
             letter = app.grid[row][col] #draw letter if cell is filled
             if letter:
+                size = int(app.cellSize * 0.4)
                 drawLabel(letter, x + app.cellSize / 2, y + app.cellSize / 2,
-                          size = 36, bold = True)
+                          size = size, bold = True)
 
 def onKeyPress(app, key):
     if app.mode == 'input':
@@ -106,16 +114,22 @@ def getGridPosition(app, index):
     return index // app.cols, index % app.cols
 
 def redrawAll(app):
-    drawLabel("Auto Hunt Beta", app.width // 2, 20, size = 20)
+    titleSize = int(app.height * 0.09)
+    drawLabel("AUTOHUNT", app.width // 2, 50, size = titleSize, bold = True)
     drawGrid(app)
 
     if app.mode == 'countdown':
+        countdownSize = int(app.cellSize * 0.3)
         drawLabel(app.countdown, app.width // 2, app.height // 1.05, 
-                  size = 24)
+                  size = countdownSize)
 
     if app.mode == 'animate' and app.currentWordIndex < len(app.validWords):
         word, path = app.validWords[app.currentWordIndex]
         drawWordPath(app, path, app.wordStep)
+        wordSize = int(app.cellSize * 0.3)
+        drawLabel(f"{word}", app.width // 2, 
+                  app.gridTop + app.cellSize * app.rows + 30, 
+                  size = wordSize, bold = True)
 
 def drawWordPath(app, path, step):
     for i in range(step):
@@ -159,8 +173,6 @@ def backtrack(app, row, col, node, path, visited, wordsSoFar):
     path.append((row, col))
     visited.add((row, col))
 
-    assert len(set(path)) == len(path), f"BUG: revisted cell in path {path}"
-
     if node.isWord and wordsSoFar not in app.foundWords:
         app.validWords.append((wordsSoFar, path.copy()))
         app.foundWords.add(wordsSoFar)
@@ -191,7 +203,7 @@ def buildTree(wordList):
         node.isWord = True
     return root
 
-runApp(width = 500, height = 500)
+runApp(width = 600, height = 600)
 
 
 
