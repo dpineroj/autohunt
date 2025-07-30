@@ -13,6 +13,7 @@ def onAppStart(app):
     app.gridLeft = (app.width - app.cellSize * app.cols) // 2
     app.gridTop = 100
     app.currentCell = 0
+    app.cellSpacing = 8
     app.gridSize = app.rows * app.cols
     app.grid = [['' for _ in range(app.cols)] for _ in range(app.rows)]
  
@@ -32,10 +33,12 @@ def onAppStart(app):
     app.wordStep = 0
     app.segmentDelaySteps = 0
     app.wordDelaySteps = 0
+
+    app.tile = CMUImage(Image.open('wooden-tile.png'))
     setBackground(app)
 
 def setBackground(app):
-    #always load the full-size background image (1920x1080)
+    #always load full-size background image (1920x1080)
     fullBG = Image.open('pattern-tiled-1920x1080.jpg').convert('RGB')
 
     #crop box centered around the window
@@ -64,7 +67,6 @@ def game_onResize(app):
     setBackground(app)
 
 
-    
 #https://stackoverflow.com/questions/30969687/use-python-to-open-a-file-in-read-mode
 def loadWords(path): 
     with open(path, 'r') as f:
@@ -72,20 +74,43 @@ def loadWords(path):
                  and line.strip().isalpha()]
     return words
 
+def drawRoundedGridBackground(app, radius = 20, fillColor = 'darkOliveGreen'):
+    gridWidth = app.cols * app.cellSize + (app.cols - 1) * app.cellSpacing
+    gridHeight = app.rows * app.cellSize + (app.rows - 1) * app.cellSpacing
+
+    bgLeft = app.gridLeft - app.cellSpacing
+    bgTop = app.gridTop - app.cellSpacing
+    bgWidth = gridWidth + 2 * app.cellSpacing
+    bgHeight = gridHeight + 2 * app.cellSpacing
+
+    drawRect(bgLeft + radius, bgTop,
+             bgWidth - 2 * radius, bgHeight, fill = fillColor)
+    drawRect(bgLeft, bgTop + radius,
+             bgWidth, bgHeight - 2 * radius, fill = fillColor)
+
+    drawCircle(bgLeft + radius, bgTop + radius, radius, fill = fillColor)  # top-left
+    drawCircle(bgLeft + bgWidth - radius, bgTop + radius, radius, fill = fillColor)  # top-right
+    drawCircle(bgLeft + radius, bgTop + bgHeight - radius, radius, fill = fillColor)  # bottom-left
+    drawCircle(bgLeft + bgWidth - radius, bgTop + bgHeight - radius, radius, fill = fillColor)  # bottom-right
+
+
+
+
 def drawGrid(app):
+    drawRoundedGridBackground(app)
     for row in range(app.rows):
         for col in range(app.cols):
-            x = app.gridLeft + col * app.cellSize
-            y = app.gridTop + row * app.cellSize
-            #draw cell border
-            drawRect(x, y, app.cellSize, app.cellSize, fill = None, 
-                     border = 'black', borderWidth = 2)
-            
+            x = app.gridLeft + col * (app.cellSize + app.cellSpacing)
+            y = app.gridTop + row * (app.cellSize + app.cellSpacing)
+            drawRect(x, y, app.cellSize, app.cellSize, fill='darkOliveGreen', border=None)
+            drawImage(app.tile, x, y, width = app.cellSize, height = app.cellSize)
+
             letter = app.grid[row][col] #draw letter if cell is filled
             if letter:
                 size = int(app.cellSize * 0.4)
                 drawLabel(letter, x + app.cellSize / 2, y + app.cellSize / 2,
                           size = size, bold = True)
+
 def start_redrawAll(app):
     drawImage(app.AutoHuntBG, 0, 0)
     drawLabel('AUTOHUNT', app.width // 2, 160, size = 36, bold = True)
