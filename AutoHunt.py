@@ -3,6 +3,7 @@
 #utoHunt - Word Hunt Checker and Visualizer
 #29.8.25
 from cmu_graphics import *
+from PIL import Image  
 
 def onAppStart(app):
     app.rows, app.cols = 4, 4
@@ -31,11 +32,37 @@ def onAppStart(app):
     app.wordStep = 0
     app.segmentDelaySteps = 0
     app.wordDelaySteps = 0
+    setBackground(app)
+
+def setBackground(app):
+    #always load the full-size background image (1920x1080)
+    fullBG = Image.open('pattern-tiled-1920x1080.jpg').convert('RGB')
+
+    #crop box centered around the window
+    bgWidth, bgHeight = fullBG.size
+    cropWidth, cropHeight = app.width, app.height
+
+    #bounds
+    cropWidth = min(cropWidth, bgWidth)
+    cropHeight = min(cropHeight, bgHeight)
+
+    left = (bgWidth - cropWidth) // 2
+    top = (bgHeight - cropHeight) // 2
+    right = left + cropWidth
+    bottom = top + cropHeight
+
+    cropped = fullBG.crop((left, top, right, bottom))
+    app.AutoHuntBG = CMUImage(cropped)
+
+def start_onResize(app):
+    setBackground(app)
 
 def game_onResize(app):
     app.cellSize = min((app.width - 2 * app.gridMargin) // app.cols,
                         (app.height - 200) // app.rows)
     app.gridLeft = (app.width - app.cellSize * app.cols) // 2
+    setBackground(app)
+
 
     
 #https://stackoverflow.com/questions/30969687/use-python-to-open-a-file-in-read-mode
@@ -60,6 +87,7 @@ def drawGrid(app):
                 drawLabel(letter, x + app.cellSize / 2, y + app.cellSize / 2,
                           size = size, bold = True)
 def start_redrawAll(app):
+    drawImage(app.AutoHuntBG, 0, 0)
     drawLabel('AUTOHUNT', app.width // 2, 160, size = 36, bold = True)
     drawLabel('automically solve word hunt puzzles', app.width // 2, 200, size = 18)
     drawLabel('press space to begin', app.width // 2, 260, size = 20)
@@ -121,6 +149,7 @@ def getGridPosition(app, index):
     return index // app.cols, index % app.cols
 
 def game_redrawAll(app):
+    drawImage(app.AutoHuntBG, 0, 0)
     titleSize = int(app.height * 0.09)
     drawLabel("AUTOHUNT", app.width // 2, 50, size = titleSize, bold = True)
     drawGrid(app)
