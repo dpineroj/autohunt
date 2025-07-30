@@ -32,7 +32,7 @@ def onAppStart(app):
     app.segmentDelaySteps = 0
     app.wordDelaySteps = 0
 
-def onResize(app):
+def game_onResize(app):
     app.cellSize = min((app.width - 2 * app.gridMargin) // app.cols,
                         (app.height - 200) // app.rows)
     app.gridLeft = (app.width - app.cellSize * app.cols) // 2
@@ -59,8 +59,17 @@ def drawGrid(app):
                 size = int(app.cellSize * 0.4)
                 drawLabel(letter, x + app.cellSize / 2, y + app.cellSize / 2,
                           size = size, bold = True)
+def start_redrawAll(app):
+    drawLabel('AUTOHUNT', app.width // 2, 160, size = 36, bold = True)
+    drawLabel('automically solve word hunt puzzles', app.width // 2, 200, size = 18)
+    drawLabel('press space to begin', app.width // 2, 260, size = 20)
 
-def onKeyPress(app, key):
+def start_onKeyPress(app, key):
+    if key == 'space':
+        setActiveScreen('game')
+
+
+def game_onKeyPress(app, key):
     if app.mode == 'input':
         if key == 'backspace' and app.currentCell > 0:
             app.currentCell -= 1
@@ -75,7 +84,7 @@ def onKeyPress(app, key):
             if app.currentCell == app.gridSize:
                 app.mode = 'preCountdown' #time buffer before countdown
 
-def onStep(app):
+def game_onStep(app):
     if app.mode == 'preCountdown': #delay 0.5s befire countdown
         app.preCountdownSteps += 1
         if app.preCountdownSteps >= 5:
@@ -111,7 +120,7 @@ def onStep(app):
 def getGridPosition(app, index):
     return index // app.cols, index % app.cols
 
-def redrawAll(app):
+def game_redrawAll(app):
     titleSize = int(app.height * 0.09)
     drawLabel("AUTOHUNT", app.width // 2, 50, size = titleSize, bold = True)
     drawGrid(app)
@@ -159,7 +168,7 @@ def findAllWords(app):
     #sort each group by word length (longest to shortest)
     for group in app.validWordGroups:
         group.sort(key = wordLength, reverse = True)
-        
+
     app.validWordGroups = [group for group in app.validWordGroups if len(group) > 0]
     app.validWordGroups.sort(key=groupLongestWordLength, reverse=True)
     app.validWords = [pair for group in app.validWordGroups for pair in group]
@@ -243,8 +252,7 @@ def buildTree(wordList):
         node.isWord = True
     return root
 
-runApp(width = 600, height = 600)
-
-
-
+def main():
+    runAppWithScreens(initialScreen = 'start', width = 600, height = 600)
+main()
 
