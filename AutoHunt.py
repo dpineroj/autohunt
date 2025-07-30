@@ -1,7 +1,7 @@
 #Name: David Pinero-Jacome
 #Andrew ID: dpineroj
 #utoHunt - Word Hunt Checker and Visualizer
-#28.8.25
+#29.8.25
 from cmu_graphics import *
 
 def onAppStart(app):
@@ -22,11 +22,10 @@ def onAppStart(app):
     app.preCountdownSteps = 0 #time buffer
     app.countdown = 3 #before word visualization starts
 
-    #text file of all english words found on stack exchange:
     #https://boardgames.stackexchange.com/questions/38366/latest-collins-scrabble-words-list-in-text-file
-
     wordList = loadWords('words.txt') 
     app.treeRoot = buildTree(wordList)
+    app.validWordGroups = []
     app.validWords = []
     app.currentWordIndex = 0
     app.wordStep = 0
@@ -39,7 +38,6 @@ def onResize(app):
     app.gridLeft = (app.width - app.cellSize * app.cols) // 2
 
     
-#learned how to open text files in read mode on stackoverflow:
 #https://stackoverflow.com/questions/30969687/use-python-to-open-a-file-in-read-mode
 def loadWords(path): 
     with open(path, 'r') as f:
@@ -142,21 +140,37 @@ def drawWordPath(app, path, step):
             y2 = app.gridTop + r2 * app.cellSize + app.cellSize // 2
             drawLine(x1, y1, x2, y2, fill = 'red', lineWidth = 4)
     
-
+def groupLongestWordLength(group):
+    if len(group) == 0:
+        return 0
+    return len(group[0][0])
 
 def findAllWords(app):
+    #reset the word list and tracking sets
     app.validWords = []
     app.foundWords = set()
+    app.validWordGroups = []
+
+    #begin backtracking from each grid cell
     for row in range(app.rows):
         for col in range(app.cols):
             backtrack(app, row, col, app.treeRoot, [], set(), "")
     
-    n = len(app.validWords)
-    for i in range(n):
-        for j in range(i + 1, n):
-            if len(app.validWords[j][0]) > len(app.validWords[i][0]):
-                app.validWords[i], app.validWords[j] = \
-                app.validWords[j], app.validWords[i]
+    #sort each group by word length (longest to shortest)
+    for group in app.validWordGroups:
+        group.sort(key = wordLength, reverse = True)
+        
+    app.validWordGroups = [group for group in app.validWordGroups if len(group) > 0]
+    app.validWordGroups.sort(key=groupLongestWordLength, reverse=True)
+    app.validWords = [pair for group in app.validWordGroups for pair in group]
+
+    print("==== FOUND WORDS ====")
+    for word, path in app.validWords:
+        print(word)
+
+def wordLength(pair):
+    return len(pair[0])
+
 
 def backtrack(app, row, col, node, path, visited, wordsSoFar):
     if not (0 <= row < app.rows and 0 <= col < app.cols):
@@ -173,9 +187,35 @@ def backtrack(app, row, col, node, path, visited, wordsSoFar):
     path.append((row, col))
     visited.add((row, col))
 
-    if node.isWord and wordsSoFar not in app.foundWords:
-        app.validWords.append((wordsSoFar, path.copy()))
+
+# Add current full word if it's valid and not already found
+    if node.isWord:
+        # Remove from any previous group if already found
+        for group in app.validWordGroups:
+            group[:] = [pair for pair in group if pair[0] != wordsSoFar]
+
+        # Create a new group starting with this word
+        app.validWordGroups.append([(wordsSoFar, path[:])])
         app.foundWords.add(wordsSoFar)
+
+        # Now walk backward and check all shorter prefixes
+        for i in range(len(path) - 1, 0, -1):
+            prefixPath = path[:i]
+            prefixWord = wordsSoFar[:i]
+            prefixNode = app.treeRoot
+            valid = True
+            for letter in prefixWord:
+                if letter in prefixNode.children:
+                    prefixNode = prefixNode.children[letter]
+                else:
+                    valid = False
+                    break
+            if valid and prefixNode.isWord:
+                # Remove prefix from earlier groups
+                for group in app.validWordGroups[:-1]:
+                    group[:] = [pair for pair in group if pair[0] != prefixWord]
+                app.validWordGroups[-1].append((prefixWord, prefixPath))
+                app.foundWords.add(prefixWord)
     
     for dr in [-1, 0, 1]:
         for dc in [-1, 0, 1]:
