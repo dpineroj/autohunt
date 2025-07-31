@@ -35,11 +35,6 @@ def onAppStart(app):
     app.segmentDelaySteps = 0
     app.wordDelaySteps = 0
 
-
-    app.buttonW = app.width * 0.3
-    app.buttonH = app.height * 0.07
-    app.buttonX = (app.width - app.buttonW) / 2
-    app.buttonY = app.height * 0.8
     
     app.tile = CMUImage(Image.open('wooden-tile.png'))
 
@@ -51,12 +46,74 @@ def onAppStart(app):
     app.miniWordIndex = 0
     app.miniWordPath = []
     app.miniValidWords = []
+
+    app.arrowButtonSize = app.height * 0.07
+
+    # Dimensions
+    app.arrowButtonSize = app.miniCellSize * 0.8
+    arrowSpacing = app.arrowButtonSize * 3  # total distance between centers
+
+    # Center between left and right arrows
+    centerX = app.width / 2
+
+    # Centered positions
+    leftX = centerX - arrowSpacing / 2 - app.arrowButtonSize / 2
+    rightX = centerX + arrowSpacing / 2 - app.arrowButtonSize / 2
+    app.arrowY = app.miniGridTop - app.arrowButtonSize * 1.2  # slightly above grid
+    app.leftArrow = Button(leftX, app.arrowY, app.arrowButtonSize, app.arrowButtonSize,
+                        fill=None, fun=handleLeftArrow)
+    app.rightArrow = Button(rightX, app.arrowY, app.arrowButtonSize, app.arrowButtonSize,
+                            fill=None, fun=handleRightArrow)
+
+
+
+    app.miniWordIndex = 0
+    app.miniStep = 0
+    app.miniSegmentDelaySteps = 0
+    app.animateMiniWord = True
     findWordsForMiniGrid(app)
 
-
-
     start_onResize(app)
-    setBackground(app)
+    resizeMiniComponents(app)
+
+
+#AI helped with logic to resize start screen so it fits any window
+def resizeMiniComponents(app):
+    # ==== Mini grid sizing ====
+    maxCellSizeW = app.width * 0.08
+    maxCellSizeH = app.height * 0.08
+    app.miniCellSize = min(maxCellSizeW, maxCellSizeH)
+
+    app.cellSpacing = app.miniCellSize * 0.15  # spacing tied to cell size
+
+    # Positioning: center horizontally, fixed vertically below subtitle
+    totalGridWidth = 4 * app.miniCellSize + 3 * app.cellSpacing
+    app.miniGridLeft = (app.width - totalGridWidth) / 2
+    app.miniGridTop = app.height * 0.38  # keep vertical anchor point fixed
+
+    # ==== Arrow buttons ====
+    app.arrowButtonSize = app.miniCellSize * 0.7
+    arrowSpacing = app.arrowButtonSize * 3.5  # distance between centers
+
+    centerX = app.width / 2
+
+    arrowY = app.miniGridTop - app.arrowButtonSize * 1.45
+
+    app.leftArrow.x = centerX - arrowSpacing / 2 - app.arrowButtonSize / 2
+    app.leftArrow.y = arrowY
+    app.leftArrow.w = app.arrowButtonSize
+    app.leftArrow.h = app.arrowButtonSize
+
+    app.rightArrow.x = centerX + arrowSpacing / 2 - app.arrowButtonSize / 2
+    app.rightArrow.y = arrowY
+    app.rightArrow.w = app.arrowButtonSize
+    app.rightArrow.h = app.arrowButtonSize
+
+    # ==== Word display pill ====
+    app.wordBoxW = app.arrowButtonSize * 2.4
+    app.wordBoxH = app.arrowButtonSize * 0.8
+    app.wordBoxX = (app.width - app.wordBoxW) / 2
+    app.wordBoxY = app.miniGridTop - app.arrowButtonSize * 1.4 # aligned slightly below arrows
 
 def setBackground(app):
     #always load full-size background image (1920x1080)
@@ -83,9 +140,11 @@ def start_onResize(app):
     app.buttonW = app.width * 0.3
     app.buttonH = app.height * 0.07
     app.buttonX = (app.width - app.buttonW) / 2
-    app.buttonY = app.height * 0.8
+    app.buttonY = app.height * 0.85
     app.automateButton = Button(app.buttonX, app.buttonY, app.buttonW, app.buttonH,
                                 fill='goldenrod', fun=startFunction)
+
+    resizeMiniComponents(app)
 
 def generateRandomGrid(rows, cols):
     return [[random.choice(string.ascii_uppercase) for _ in range(cols)] \
@@ -119,17 +178,28 @@ class Button:
         return self.x <= mx <= self.x + self.w and self.y <= my <= self.y + self.h
 
     def draw(self):
-        radius = self.h / 2  # fully rounded ends
-        drawRect(self.x + radius, self.y, self.w - 2 * radius, self.h, 
-                 fill = self.fill)
-        drawCircle(self.x + radius, self.y + self.h / 2, radius, 
-                   fill = self.fill)
-        drawCircle(self.x + self.w - radius, self.y + self.h / 2, radius, 
-                   fill = self.fill)
+        if self.fun in [handleLeftArrow, handleRightArrow]:
+            cx = self.x + self.w / 2
+            cy = self.y + self.h / 2
 
-        drawLabel('Automate', self.x + self.w * 0.5, self.y + self.h / 2,
-                  size = int(self.h * 0.45), bold = True, fill = 'black',
-                  font = 'monospace')
+            arrow = '<' if self.fun == handleLeftArrow else '>'
+            drawCircle(cx, cy, self.h * 0.3, fill='black', opacity=30)
+            drawLabel(arrow, cx, cy, size=int(self.h * 0.3), bold=True,
+                    fill='white', font='monospace', opacity = 20)
+
+
+        elif self.fun == startFunction:
+            radius = min(self.h / 2, self.w / 2)
+            if self.w < 2 * radius:
+                return
+
+            drawRect(self.x + radius, self.y, self.w - 2 * radius, self.h, fill=self.fill)
+            drawCircle(self.x + radius, self.y + self.h / 2, radius, fill=self.fill)
+            drawCircle(self.x + self.w - radius, self.y + self.h / 2, radius, fill=self.fill)
+            drawLabel('Automate', self.x + self.w / 2, self.y + self.h / 2,
+                    size=int(self.h * 0.45), bold=True, fill='black', font='monospace')
+
+
 
 
 
@@ -141,27 +211,49 @@ def loadWords(path):
                  and line.strip().isalpha()]
     return words
 
-def drawRoundedGridBackground(app, radius = 20, fillColor = 'darkOliveGreen'):
-    gridWidth = app.cols * app.cellSize + (app.cols - 1) * app.cellSpacing
-    gridHeight = app.rows * app.cellSize + (app.rows - 1) * app.cellSpacing
+def drawRoundedGridBackground(left, top, rows, cols, cellSize, spacing, 
+                               radius=20, fillColor=rgb(68, 87, 59), 
+                               borderColor='lightGreen', borderWidth=4):
+    # Total grid dimensions
+    gridWidth = cols * cellSize + (cols - 1) * spacing
+    gridHeight = rows * cellSize + (rows - 1) * spacing
 
-    bgLeft = app.gridLeft - app.cellSpacing
-    bgTop = app.gridTop - app.cellSpacing
-    bgWidth = gridWidth + 2 * app.cellSpacing
-    bgHeight = gridHeight + 2 * app.cellSpacing
+    # Outer background bounds 
+    bgLeft = left - spacing - borderWidth
+    bgTop = top - spacing - borderWidth
+    bgWidth = gridWidth + 2 * spacing + 2 * borderWidth
+    bgHeight = gridHeight + 2 * spacing + 2 * borderWidth
 
-    drawRect(bgLeft + radius, bgTop,
-             bgWidth - 2 * radius, bgHeight, fill = fillColor)
-    drawRect(bgLeft, bgTop + radius,
-             bgWidth, bgHeight - 2 * radius, fill = fillColor)
+    outerRadius = radius + borderWidth
 
-    drawCircle(bgLeft + radius, bgTop + radius, radius, fill = fillColor)  # top-left
-    drawCircle(bgLeft + bgWidth - radius, bgTop + radius, radius, fill = fillColor)  # top-right
-    drawCircle(bgLeft + radius, bgTop + bgHeight - radius, radius, fill = fillColor)  # bottom-left
-    drawCircle(bgLeft + bgWidth - radius, bgTop + bgHeight - radius, radius, fill = fillColor)  # bottom-right
+    # === Draw Border Layer ===
+    drawRect(bgLeft + outerRadius, bgTop, bgWidth - 2 * outerRadius, bgHeight, fill=borderColor)
+    drawRect(bgLeft, bgTop + outerRadius, bgWidth, bgHeight - 2 * outerRadius, fill=borderColor)
+
+    drawCircle(bgLeft + outerRadius, bgTop + outerRadius, outerRadius, fill=borderColor)
+    drawCircle(bgLeft + bgWidth - outerRadius, bgTop + outerRadius, outerRadius, fill=borderColor)
+    drawCircle(bgLeft + outerRadius, bgTop + bgHeight - outerRadius, outerRadius, fill=borderColor)
+    drawCircle(bgLeft + bgWidth - outerRadius, bgTop + bgHeight - outerRadius, outerRadius, fill=borderColor)
+
+    # === Draw Inner Grid Background ===
+    innerLeft = bgLeft + borderWidth
+    innerTop = bgTop + borderWidth
+    innerWidth = bgWidth - 2 * borderWidth
+    innerHeight = bgHeight - 2 * borderWidth
+
+    drawRect(innerLeft + radius, innerTop, innerWidth - 2 * radius, innerHeight, fill=fillColor)
+    drawRect(innerLeft, innerTop + radius, innerWidth, innerHeight - 2 * radius, fill=fillColor)
+
+    drawCircle(innerLeft + radius, innerTop + radius, radius, fill=fillColor)
+    drawCircle(innerLeft + innerWidth - radius, innerTop + radius, radius, fill=fillColor)
+    drawCircle(innerLeft + radius, innerTop + innerHeight - radius, radius, fill=fillColor)
+    drawCircle(innerLeft + innerWidth - radius, innerTop + innerHeight - radius, radius, fill=fillColor)
+
 
 def drawGrid(app):
-    drawRoundedGridBackground(app)
+    drawRoundedGridBackground(app.gridLeft, app.gridTop,
+                          app.rows, app.cols,
+                          app.cellSize, app.cellSpacing)
     for row in range(app.rows):
         for col in range(app.cols):
             x = app.gridLeft + col * (app.cellSize + app.cellSpacing)
@@ -181,11 +273,11 @@ def start_redrawAll(app):
     titleSize = int(app.height * 0.1)
     subtitleSize = int(app.height * 0.025)
 
-    drawLabel('AUTOHUNT', app.width // 2, app.height * 0.25,
+    drawLabel('AUTOHUNT', app.width // 2, app.height * 0.15,
               size=titleSize, font='monospace', bold=True, fill=rgb(34, 61, 36))
 
     drawLabel('complete the grid to hunt all possible words', app.width // 2,
-              app.height * 0.33, size=subtitleSize, fill=rgb(34, 61, 36))
+              app.height * 0.22, size=subtitleSize, fill=rgb(34, 61, 36))
 
 
     drawRect(0, app.height * 0.95, app.width, app.height, 
@@ -195,18 +287,73 @@ def start_redrawAll(app):
               size = int(size * 0.3), fill = 'gainsboro', bold = True)
     drawMiniGrid(app)
 
-
     app.automateButton.draw()
+    drawMiniWordPath(app)
+    drawMiniWordDisplay(app)
+    app.leftArrow.draw()
+    app.rightArrow.draw()
+
+def drawMiniWordDisplay(app):
+    if app.miniWordIndex < len(app.miniValidWords):
+        word, _ = app.miniValidWords[app.miniWordIndex]
+        x = app.wordBoxX
+        y = app.wordBoxY
+        w = app.wordBoxW
+        h = app.wordBoxH
+        r = h / 2  # rounded radius
+
+        drawRect(x + r, y, w - 2 * r, h, fill='lightGreen')
+        drawCircle(x + r, y + h / 2, r, fill='lightGreen')
+        drawCircle(x + w - r, y + h / 2, r, fill='lightGreen')
+
+        drawLabel(word, x + w / 2, y + h / 2,
+                  size=int(h * 0.4), fill='black', font='arial', 
+                  bold=True)
+
+
+def drawMiniWordPath(app):
+    if app.miniWordIndex < len(app.miniValidWords):
+        _, path = app.miniValidWords[app.miniWordIndex]
+        for i in range(min(app.miniStep, len(path) - 1)):
+            r1, c1 = path[i]
+            r2, c2 = path[i + 1]
+            x1 = app.miniGridLeft + c1 * (app.miniCellSize + app.cellSpacing) + app.miniCellSize / 2
+            y1 = app.miniGridTop + r1 * (app.miniCellSize + app.cellSpacing) + app.miniCellSize / 2
+            x2 = app.miniGridLeft + c2 * (app.miniCellSize + app.cellSpacing) + app.miniCellSize / 2
+            y2 = app.miniGridTop + r2 * (app.miniCellSize + app.cellSpacing) + app.miniCellSize / 2
+            drawLine(x1, y1, x2, y2, fill='red', lineWidth=2)
+
     
 def start_onMousePress(app, mx, my):
     app.automateButton.respondToPress(app, mx, my)
+    app.leftArrow.respondToPress(app, mx, my)
+    app.rightArrow.respondToPress(app, mx, my)
+
+
+def handleRightArrow(app):
+    if app.miniWordIndex < len(app.miniValidWords) - 1:
+        app.miniWordIndex += 1
+        app.miniStep = 0
+        app.miniSegmentDelaySteps = 0
+        app.animateMiniWord = True  # <--- START animating
+
+def handleLeftArrow(app):
+    if app.miniWordIndex > 0:
+        app.miniWordIndex -= 1
+        app.miniStep = 0
+        app.miniSegmentDelaySteps = 0
+        app.animateMiniWord = True  # <--- START animating
+
 
 def drawMiniGrid(app):
+    drawRoundedGridBackground(app.miniGridLeft, app.miniGridTop,
+                          app.rows, app.cols,
+                          app.miniCellSize, app.cellSpacing,
+                          radius=10)
     for row in range(app.rows):
         for col in range(app.cols):
             x = app.miniGridLeft + col * (app.miniCellSize + app.cellSpacing)
             y = app.miniGridTop + row * (app.miniCellSize + app.cellSpacing)
-            drawRect(x, y, app.miniCellSize, app.miniCellSize, fill='darkOliveGreen')
             drawImage(app.tile, x, y, width=app.miniCellSize, height=app.miniCellSize)
             letter = app.miniGrid[row][col]
             if letter:
@@ -230,6 +377,18 @@ def game_onKeyPress(app, key):
 
             if app.currentCell == app.gridSize:
                 app.mode = 'preCountdown' #time buffer before countdown
+
+def start_onStep(app):
+    if app.animateMiniWord and app.miniWordIndex < len(app.miniValidWords):
+        _, path = app.miniValidWords[app.miniWordIndex]
+        if app.miniStep < len(path) - 1:
+            app.miniSegmentDelaySteps += 1
+            if app.miniSegmentDelaySteps >= 1:
+                app.miniStep += 1
+                app.miniSegmentDelaySteps = 0
+
+
+
 
 def game_onStep(app):
     if app.mode == 'preCountdown': #delay 0.5s befire countdown
@@ -273,9 +432,11 @@ def game_redrawAll(app):
     drawGrid(app)
 
     if app.mode == 'countdown':
-        countdownSize = int(app.cellSize * 0.3)
-        drawLabel(app.countdown, app.width // 2, app.height // 1.05, 
-                  size = countdownSize)
+        drawRect(0, 0, app.width, app.height, fill = 'black', 
+                 opacity = 20)
+        size = int(app.height * 0.2)
+        drawLabel(str(app.countdown), app.width // 2, app.height // 2,
+                  size = size, fill = 'white', bold = True, font = 'monospace')
 
     if app.mode == 'animate' and app.currentWordIndex < len(app.validWords):
         word, path = app.validWords[app.currentWordIndex]
