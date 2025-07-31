@@ -1,7 +1,7 @@
 #Name: David Pinero-Jacome
 #Andrew ID: dpineroj
 #AutoHunt - Word Hunt Checker and Visualizer
-#31.8.25
+#31.8.25 
 from cmu_graphics import *
 from PIL import Image  
 import random, string
@@ -110,6 +110,8 @@ def startFunction(app):
 def setBackground(app):
     #always load full-size background image (1920x1080)
     fullBG = Image.open('pattern-tiled-1920x1080.jpg').convert('RGB')
+    #had issues loading image, learned method: 
+    #https://www.geeksforgeeks.org/python/python-pil-image-convert-method/ 
 
     #crop box centered around the window
     bgWidth, bgHeight = fullBG.size
@@ -123,7 +125,7 @@ def setBackground(app):
     top = (bgHeight - cropHeight) // 2
     right = left + cropWidth
     bottom = top + cropHeight
-
+    #https://www.geeksforgeeks.org/python/python-pil-image-crop-method/
     cropped = fullBG.crop((left, top, right, bottom))
     app.AutoHuntBG = CMUImage(cropped)
 
@@ -738,7 +740,8 @@ class Button:
                     fill = 'black', font = 'monospace')
 
 
-#replicated tree structure from cmu module
+#replicated tree structure from cmu module, with a little more:
+#https://www.aleksandrhovhannisyan.com/blog/python-trie-data-structure/
 class TreeNode: #node in prefix tree for storing words
     def __init__(self):
         self.children = dict() #characters to child treeNodes
