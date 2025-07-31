@@ -129,7 +129,7 @@ def setBackground(app):
     cropped = fullBG.crop((left, top, right, bottom))
     app.AutoHuntBG = CMUImage(cropped)
 
-#AI helped with logic to resize start screen so it fits any window
+#AI helped with logic to resize start screen so it fits any window (X)
 def resizeMiniComponents(app):
     # ==== Mini grid sizing ====
     maxCellSizeW = app.width * 0.08
@@ -150,8 +150,9 @@ def resizeMiniComponents(app):
 
     arrowY = app.miniGridTop - app.arrowButtonSize * 1.45
 
+    #everything below is AI
     app.leftArrow.x = centerX - arrowSpacing / 2 - app.arrowButtonSize / 2
-    app.leftArrow.y = arrowY
+    app.leftArrow.y = arrowY 
     app.leftArrow.w = app.arrowButtonSize
     app.leftArrow.h = app.arrowButtonSize
 
@@ -591,7 +592,6 @@ def drawWordPath(app, path, step):
             x1, y1 = getGameCellCenter(app, r1, c1)
             x2, y2 = getGameCellCenter(app, r2, c2)
 
-
             drawLine(x1, y1, x2, y2, fill = 'red', lineWidth = 4, 
                      opacity = 75)
     
@@ -613,6 +613,7 @@ def findWordsForMiniGrid(app):
         group.sort(key = wordLength, reverse = True)
 
     validGroups = [g for g in validGroups if len(g) > 0]
+    #https://docs.python.org/3/howto/sorting.html
     validGroups.sort(key = groupLongestWordLength, reverse = True)
     app.miniValidWords = [pair for g in validGroups for pair in g]
 
