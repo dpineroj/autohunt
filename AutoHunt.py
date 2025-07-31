@@ -1,7 +1,7 @@
 #Name: David Pinero-Jacome
 #Andrew ID: dpineroj
 #utoHunt - Word Hunt Checker and Visualizer
-#30.8.25
+#31.8.25
 from cmu_graphics import *
 from PIL import Image  
 import random, string
@@ -71,6 +71,19 @@ def onAppStart(app):
     app.miniStep = 0
     app.miniSegmentDelaySteps = 0
     app.animateMiniWord = True
+
+
+
+    app.wordsFound = 0
+    app.timeLeft = 60
+    app.timerActive = False
+    app.gameOver = False
+    app.infoBarY = 10
+    
+    app.mainMenuButton = Button(0, 0, 0, 0, fill='gainsboro', fun=goToMainMenu)
+    app.newBoardButton = Button(0, 0, 0, 0, fill='lightGreen', fun=restartGame)
+    game_onResize(app)
+
     findWordsForMiniGrid(app)
 
     start_onResize(app)
@@ -155,6 +168,23 @@ def game_onResize(app):
     app.cellSize = min((app.width - 2 * app.gridMargin) // app.cols,
                         (app.height - 200) // app.rows)
     app.gridLeft = (app.width - app.cellSize * app.cols) // 2
+
+    buttonW = app.width * 0.25
+    buttonH = app.height * 0.06
+    spacing = app.height * 0.02
+
+    # Centered below "Game Over"
+    app.mainMenuButton.x = (app.width - buttonW) / 2
+    app.mainMenuButton.y = app.height / 2 + 50
+    app.mainMenuButton.w = buttonW
+    app.mainMenuButton.h = buttonH
+
+    app.newBoardButton.x = app.mainMenuButton.x
+    app.newBoardButton.y = app.mainMenuButton.y + buttonH + spacing
+    app.newBoardButton.w = buttonW
+    app.newBoardButton.h = buttonH
+
+    
     setBackground(app)
 
 def startFunction(app):
@@ -196,7 +226,7 @@ class Button:
             drawRect(self.x + radius, self.y, self.w - 2 * radius, self.h, fill=self.fill)
             drawCircle(self.x + radius, self.y + self.h / 2, radius, fill=self.fill)
             drawCircle(self.x + self.w - radius, self.y + self.h / 2, radius, fill=self.fill)
-            drawLabel('Automate', self.x + self.w / 2, self.y + self.h / 2,
+            drawLabel('automate', self.x + self.w / 2, self.y + self.h / 2,
                     size=int(self.h * 0.45), bold=True, fill='black', font='monospace')
 
 
@@ -276,8 +306,9 @@ def start_redrawAll(app):
     drawLabel('AUTOHUNT', app.width // 2, app.height * 0.15,
               size=titleSize, font='monospace', bold=True, fill=rgb(34, 61, 36))
 
-    drawLabel('complete the grid to hunt all possible words', app.width // 2,
-              app.height * 0.22, size=subtitleSize, fill=rgb(34, 61, 36))
+    drawLabel('complete the grid to hunt all possible words', 
+              app.width // 2, app.height * 0.22, 
+              size=subtitleSize, fill=rgb(34, 61, 36))
 
 
     drawRect(0, app.height * 0.95, app.width, app.height, 
@@ -328,6 +359,21 @@ def start_onMousePress(app, mx, my):
     app.automateButton.respondToPress(app, mx, my)
     app.leftArrow.respondToPress(app, mx, my)
     app.rightArrow.respondToPress(app, mx, my)
+
+def game_onMousePress(app, mx, my):
+    if app.mode == 'gameOver':
+        app.mainMenuButton.respondToPress(app, mx, my)
+        app.newBoardButton.respondToPress(app, mx, my)
+
+def goToMainMenu(app):
+    onAppStart(app)  # Resets game state fully
+    setActiveScreen('start')  # Then go to start screen
+
+
+def restartGame(app):
+    onAppStart(app)
+    setActiveScreen('game')
+
 
 
 def handleRightArrow(app):
@@ -400,12 +446,35 @@ def game_onStep(app):
         app.countdown -= 1
         if app.countdown == 0:
             findAllWords(app)
+
+            if len(app.validWords) == 0:
+                app.mode = 'gameOver'
+                app.timerActive = False
+                return
+
             app.mode = 'animate'
-            app.stepsPerSecond = 2 #0.5s per step
-    if app.mode == 'animate':
+            app.stepsPerSecond = 2  # 0.5s per step
+            app.timerActive = True
+            app.timerTicks = 0
+
+
+
+    elif app.mode == 'animate':
+         # Timer countdown
+        if app.timerActive:
+            app.timerTicks += 1
+            if app.timerTicks % app.stepsPerSecond == 0:
+                app.timeLeft -= 1
+                if app.timeLeft <= 0:
+                    app.mode = 'gameOver'
+                    app.timerActive = False
+                    return
+
         if app.currentWordIndex >= len(app.validWords):
-            app.mode = 'done'
+            app.mode = 'gameOver'
+            app.timerActive = False
             return
+
         
         word, path = app.validWords[app.currentWordIndex]
 
@@ -421,6 +490,7 @@ def game_onStep(app):
                 app.wordStep = 0
                 app.wordDelaySteps = 0
                 app.segmentDelaySteps = 0
+                app.wordsFound += 1
 
 #convert linear index to (row, col) coordinates
 def getGridPosition(app, index):
@@ -429,7 +499,66 @@ def getGridPosition(app, index):
 def game_redrawAll(app):
     drawImage(app.AutoHuntBG, 0, 0)
 
+
+    # Info bar background
+    barWidth = app.width * 0.3
+    barHeight = 50
+    barX = (app.width - barWidth) / 2
+    barY = app.infoBarY
+    drawRect(barX, barY, barWidth, barHeight, fill='white', border=None, 
+             borderWidth=2)
+    
+    # Dimensions
+    pillWidth = barHeight * 1.2
+    pillHeight = barHeight * 0.45
+    pillX = barX - 5
+    pillY = barY + (barHeight - pillHeight) / 2
+    radius = pillHeight / 2  
+
+    shrink = 10  # pixels to remove from the middle
+    drawRect(pillX + radius + shrink / 2, pillY, pillWidth - 2 * radius - shrink, 
+             pillHeight, fill='goldenrod')
+
+
+    nudge = -10 # adjust as needed 
+
+    # Left cap
+    drawOval(pillX + radius - nudge, pillY + radius, pillHeight, pillHeight, fill='goldenrod')
+
+    # Right cap
+    drawOval(pillX + pillWidth - radius + nudge, pillY + radius, pillHeight, pillHeight, fill='goldenrod')
+
+
+    # Word count
+    drawLabel(f"WORDS:{app.wordsFound}", barX + barWidth * 0.28, 
+              barY + barHeight / 2,
+            size=30, fill='black', align = 'left', bold = True,
+            font = 'monospace')
+
+
+    drawRect(0, app.height * 0.95, app.width, app.height, 
+             fill = rgb(50, 50, 50))
+
     drawGrid(app)
+
+        # === Timer background below info bar ===
+    timerWidth = app.width * 0.05
+    timerHeight = 25
+    timerX = (app.width + barWidth) / 2 - timerWidth 
+    timerY = barY + barHeight   
+
+    drawRect(timerX, timerY, timerWidth, timerHeight, 
+             fill='black', opacity=30)
+
+    
+    minutes = app.timeLeft // 60
+    seconds = app.timeLeft % 60
+    timeText = f"{minutes}:{seconds:02}"
+
+    drawLabel(timeText, timerX + timerWidth / 2, timerY + timerHeight / 2,
+            size=10, fill='white', bold=True, font='monospace')
+
+
 
     if app.mode == 'countdown':
         drawRect(0, 0, app.width, app.height, fill = 'black', 
@@ -441,21 +570,52 @@ def game_redrawAll(app):
     if app.mode == 'animate' and app.currentWordIndex < len(app.validWords):
         word, path = app.validWords[app.currentWordIndex]
         drawWordPath(app, path, app.wordStep)
-        wordSize = int(app.cellSize * 0.3)
-        drawLabel(f"{word}", app.width // 2, 
-                  app.gridTop + app.cellSize * app.rows + 30, 
-                  size = wordSize, bold = True)
+        wordSize = int(app.height * 0.025)  # slightly smaller to fit the pill
+        drawLabel(f"{word}", app.width // 2,
+                app.height * 0.97,  # vertically centered in gray pill
+                size=wordSize, fill='gainsboro', bold=True)
+    
+    if app.mode == 'gameOver':
+        drawRect(0, 0, app.width, app.height, fill='black', opacity=80)
+        drawLabel("Words Hunted", app.width // 2, app.height // 2,
+                  size=40, fill='white', bold=True)
+
+        # Draw Main Menu button
+        drawRect(app.mainMenuButton.x, app.mainMenuButton.y,
+                 app.mainMenuButton.w, app.mainMenuButton.h,
+                 fill=app.mainMenuButton.fill, border='white', borderWidth=2)
+        drawLabel("main menu", app.mainMenuButton.x + app.mainMenuButton.w / 2,
+                  app.mainMenuButton.y + app.mainMenuButton.h / 2,
+                  size=20, fill='black', bold=True)
+
+        # Draw New Board button
+        drawRect(app.newBoardButton.x, app.newBoardButton.y,
+                 app.newBoardButton.w, app.newBoardButton.h,
+                 fill=app.newBoardButton.fill, border='white', borderWidth=2)
+        drawLabel("new board", app.newBoardButton.x + app.newBoardButton.w / 2,
+                  app.newBoardButton.y + app.newBoardButton.h / 2,
+                  size=20, fill='black', bold=True)
+
+
+
+#AI used to help fix lines not being centered when drawing path
+def getGameCellCenter(app, row, col):
+    x = app.gridLeft + col * (app.cellSize + app.cellSpacing) + app.cellSize / 2
+    y = app.gridTop + row * (app.cellSize + app.cellSpacing) + app.cellSize / 2
+    return x, y
+
 
 def drawWordPath(app, path, step):
     for i in range(step):
         if i < len(path) - 1:
             r1, c1 = path[i]
             r2, c2 = path[i + 1]
-            x1 = app.gridLeft + c1 * app.cellSize + app.cellSize // 2
-            y1 = app.gridTop + r1 * app.cellSize + app.cellSize // 2
-            x2 = app.gridLeft + c2 * app.cellSize + app.cellSize // 2
-            y2 = app.gridTop + r2 * app.cellSize + app.cellSize // 2
-            drawLine(x1, y1, x2, y2, fill = 'red', lineWidth = 4)
+            x1, y1 = getGameCellCenter(app, r1, c1)
+            x2, y2 = getGameCellCenter(app, r2, c2)
+
+
+            drawLine(x1, y1, x2, y2, fill = 'red', lineWidth = 4, 
+                     opacity = 75)
     
 def groupLongestWordLength(group):
     if len(group) == 0:
