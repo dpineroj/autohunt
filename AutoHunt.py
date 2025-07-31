@@ -175,7 +175,7 @@ def start_onResize(app):
     app.buttonY = app.height * 0.85
     app.automateButton = Button(app.buttonX, app.buttonY,
                                 app.buttonW, app.buttonH,
-                                fill = 'goldenrod', fun=startFunction)
+                                fill = 'goldenrod', fun =startFunction)
     resizeMiniComponents(app)
 
 def generateRandomGrid(rows, cols):
@@ -214,9 +214,9 @@ def loadWords(path): #learned how to open text file from ^^^^
     return words
 
 def drawRoundedGridBackground(left, top, rows, cols, cellSize, spacing, 
-                               radius=20, fillColor=rgb(68, 87, 59), 
-                               borderColor='lightGreen', borderWidth=4):
-    # Total grid dimensions
+                               radius = 20, fillColor = rgb(68, 87, 59), 
+                               borderColor = 'lightGreen', borderWidth = 4):
+    # Total grid dimensions 
     gridWidth = cols * cellSize + (cols - 1) * spacing
     gridHeight = rows * cellSize + (rows - 1) * spacing
 
@@ -273,7 +273,7 @@ def drawGrid(app):
             x = app.gridLeft + col * (app.cellSize + app.cellSpacing)
             y = app.gridTop + row * (app.cellSize + app.cellSpacing)
             drawRect(x, y, app.cellSize, app.cellSize, 
-                     fill = 'darkOliveGreen', border=None)
+                     fill = 'darkOliveGreen', border = None)
             drawImage(app.tile, x, y, width = app.cellSize,
                        height = app.cellSize)
 
@@ -343,7 +343,7 @@ def drawMiniWordPath(app):
             + app.miniCellSize / 2
             y2 = app.miniGridTop + r2 * (app.miniCellSize + app.cellSpacing) \
             + app.miniCellSize / 2
-            drawLine(x1, y1, x2, y2, fill = 'red', lineWidth=2)
+            drawLine(x1, y1, x2, y2, fill = 'red', lineWidth = 2)
 
     
 def start_onMousePress(app, mx, my):
@@ -383,13 +383,13 @@ def drawMiniGrid(app):
     drawRoundedGridBackground(app.miniGridLeft, app.miniGridTop,
                           app.rows, app.cols,
                           app.miniCellSize, app.cellSpacing,
-                          radius=10)
+                          radius = 10)
     for row in range(app.rows):
         for col in range(app.cols):
             x = app.miniGridLeft + col * (app.miniCellSize + app.cellSpacing)
             y = app.miniGridTop + row * (app.miniCellSize + app.cellSpacing)
-            drawImage(app.tile, x, y, width=app.miniCellSize, 
-                      height=app.miniCellSize)
+            drawImage(app.tile, x, y, width = app.miniCellSize, 
+                      height = app.miniCellSize)
             letter = app.miniGrid[row][col]
             if letter:
                 size = int(app.miniCellSize * 0.4)
@@ -487,8 +487,8 @@ def game_redrawAll(app):
     barHeight = 50
     barX = (app.width - barWidth) / 2
     barY = app.infoBarY
-    drawRect(barX, barY, barWidth, barHeight, fill = 'white', border=None, 
-             borderWidth=2)
+    drawRect(barX, barY, barWidth, barHeight, fill = 'white', border = None, 
+             borderWidth = 2)
     
     # Dimensions setup for pretty display (rounded rectangle)
     pillWidth = barHeight * 1.2
@@ -561,7 +561,8 @@ def game_redrawAll(app):
         # Draw Main Menu button
         drawRect(app.mainMenuButton.x, app.mainMenuButton.y,
                  app.mainMenuButton.w, app.mainMenuButton.h,
-                 fill = app.mainMenuButton.fill, border='white', borderWidth=2)
+                 fill = app.mainMenuButton.fill, border = 'white', 
+                 borderWidth = 2)
         drawLabel("main menu", app.mainMenuButton.x + app.mainMenuButton.w / 2,
                   app.mainMenuButton.y + app.mainMenuButton.h / 2,
                   size = 20, fill = 'black', bold = True)
@@ -569,7 +570,8 @@ def game_redrawAll(app):
         # Draw New Board button
         drawRect(app.newBoardButton.x, app.newBoardButton.y,
                  app.newBoardButton.w, app.newBoardButton.h,
-                 fill = app.newBoardButton.fill, border='white', borderWidth=2)
+                 fill = app.newBoardButton.fill, border = 'white',
+                   borderWidth = 2)
         drawLabel("new board", app.newBoardButton.x + app.newBoardButton.w / 2,
                   app.newBoardButton.y + app.newBoardButton.h / 2,
                   size = 20, fill = 'black', bold = True)
@@ -611,7 +613,7 @@ def findWordsForMiniGrid(app):
         group.sort(key = wordLength, reverse = True)
 
     validGroups = [g for g in validGroups if len(g) > 0]
-    validGroups.sort(key = groupLongestWordLength, reverse=True)
+    validGroups.sort(key = groupLongestWordLength, reverse = True)
     app.miniValidWords = [pair for g in validGroups for pair in g]
 
 def findAllWords(app):
@@ -631,7 +633,7 @@ def findAllWords(app):
         group.sort(key = wordLength, reverse = True)
 
     app.validWordGroups = [group for group in app.validWordGroups if len(group) > 0]
-    app.validWordGroups.sort(key=groupLongestWordLength, reverse=True)
+    app.validWordGroups.sort(key = groupLongestWordLength, reverse = True)
     app.validWords = [pair for group in app.validWordGroups for pair in group]
 
 def wordLength(pair):
