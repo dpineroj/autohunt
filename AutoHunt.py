@@ -4,6 +4,7 @@
 #30.8.25
 from cmu_graphics import *
 from PIL import Image  
+import random, string
 
 def onAppStart(app):
     app.rows, app.cols = 4, 4
@@ -41,6 +42,19 @@ def onAppStart(app):
     app.buttonY = app.height * 0.8
     
     app.tile = CMUImage(Image.open('wooden-tile.png'))
+
+    
+    app.miniGrid = generateRandomGrid(4,4)
+    app.miniCellSize = app.cellSize * 0.5  # half size for start screen
+    app.miniGridTop = app.height * 0.38  # below subtitle
+    app.miniGridLeft = (app.width - (app.miniCellSize * 4 + 3 * app.cellSpacing)) / 2
+    app.miniWordIndex = 0
+    app.miniWordPath = []
+    app.miniValidWords = []
+    findWordsForMiniGrid(app)
+
+
+
     start_onResize(app)
     setBackground(app)
 
@@ -72,6 +86,10 @@ def start_onResize(app):
     app.buttonY = app.height * 0.8
     app.automateButton = Button(app.buttonX, app.buttonY, app.buttonW, app.buttonH,
                                 fill='goldenrod', fun=startFunction)
+
+def generateRandomGrid(rows, cols):
+    return [[random.choice(string.ascii_uppercase) for _ in range(cols)] \
+             for _ in range(rows)]
 
 
 def game_onResize(app):
@@ -175,11 +193,27 @@ def start_redrawAll(app):
     size = app.height * 0.08
     drawLabel("LET'S PLAY WORD HUNT!", app.width // 2, app. height * 0.97, 
               size = int(size * 0.3), fill = 'gainsboro', bold = True)
+    drawMiniGrid(app)
+
 
     app.automateButton.draw()
     
 def start_onMousePress(app, mx, my):
     app.automateButton.respondToPress(app, mx, my)
+
+def drawMiniGrid(app):
+    for row in range(app.rows):
+        for col in range(app.cols):
+            x = app.miniGridLeft + col * (app.miniCellSize + app.cellSpacing)
+            y = app.miniGridTop + row * (app.miniCellSize + app.cellSpacing)
+            drawRect(x, y, app.miniCellSize, app.miniCellSize, fill='darkOliveGreen')
+            drawImage(app.tile, x, y, width=app.miniCellSize, height=app.miniCellSize)
+            letter = app.miniGrid[row][col]
+            if letter:
+                size = int(app.miniCellSize * 0.4)
+                drawLabel(letter, x + app.miniCellSize / 2, y + app.miniCellSize / 2,
+                          size = size, bold = True)
+
 
 
 def game_onKeyPress(app, key):
@@ -267,6 +301,21 @@ def groupLongestWordLength(group):
         return 0
     return len(group[0][0])
 
+def findWordsForMiniGrid(app):
+    validGroups = []
+    foundWords = set()
+    for row in range(app.rows):
+        for col in range(app.cols):
+            backtrack(app, row, col, app.treeRoot, [], set(), "",
+                      app.miniGrid, validGroups, foundWords)
+
+    for group in validGroups:
+        group.sort(key = wordLength, reverse = True)
+
+    validGroups = [g for g in validGroups if len(g) > 0]
+    validGroups.sort(key = groupLongestWordLength, reverse=True)
+    app.miniValidWords = [pair for g in validGroups for pair in g]
+
 def findAllWords(app):
     #reset the word list and tracking sets
     app.validWords = []
@@ -276,7 +325,8 @@ def findAllWords(app):
     #begin backtracking from each grid cell
     for row in range(app.rows):
         for col in range(app.cols):
-            backtrack(app, row, col, app.treeRoot, [], set(), "")
+            backtrack(app, row, col, app.treeRoot, [], set(), "",
+                      app.grid, app.validWordGroups, app.foundWords)
     
     #sort each group by word length (longest to shortest)
     for group in app.validWordGroups:
@@ -290,13 +340,14 @@ def wordLength(pair):
     return len(pair[0])
 
 
-def backtrack(app, row, col, node, path, visited, wordsSoFar):
+def backtrack(app, row, col, node, path, visited, wordsSoFar, grid, 
+              validGroups, foundWords):
     if not (0 <= row < app.rows and 0 <= col < app.cols):
         return
     if (row, col) in visited:
         return
     
-    letter = app.grid[row][col]
+    letter = grid[row][col]
     if not letter or letter not in node.children:
         return
     
@@ -309,12 +360,12 @@ def backtrack(app, row, col, node, path, visited, wordsSoFar):
 # Add current full word if it's valid and not already found
     if node.isWord:
         # Remove from any previous group if already found
-        for group in app.validWordGroups:
+        for group in validGroups:
             group[:] = [pair for pair in group if pair[0] != wordsSoFar]
 
         # Create a new group starting with this word
-        app.validWordGroups.append([(wordsSoFar, path[:])])
-        app.foundWords.add(wordsSoFar)
+        validGroups.append([(wordsSoFar, path[:])])
+        foundWords.add(wordsSoFar)
 
         # Now walk backward and check all shorter prefixes
         for i in range(len(path) - 1, 0, -1):
@@ -330,16 +381,16 @@ def backtrack(app, row, col, node, path, visited, wordsSoFar):
                     break
             if valid and prefixNode.isWord:
                 # Remove prefix from earlier groups
-                for group in app.validWordGroups[:-1]:
+                for group in validGroups[:-1]:
                     group[:] = [pair for pair in group if pair[0] != prefixWord]
-                app.validWordGroups[-1].append((prefixWord, prefixPath))
-                app.foundWords.add(prefixWord)
+                validGroups[-1].append((prefixWord, prefixPath))
+                foundWords.add(prefixWord)
     
     for dr in [-1, 0, 1]:
         for dc in [-1, 0, 1]:
             if not (dr == 0 and dc == 0):
-                backtrack(app, row + dr, col + dc, node, path,
-                          visited, wordsSoFar)
+                backtrack(app, row + dr, col + dc, node, path, visited,
+                          wordsSoFar, grid, validGroups, foundWords)
     
     path.pop()
     visited.remove((row, col))
