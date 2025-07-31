@@ -1,7 +1,7 @@
 #Name: David Pinero-Jacome
 #Andrew ID: dpineroj
 #utoHunt - Word Hunt Checker and Visualizer
-#29.8.25
+#30.8.25
 from cmu_graphics import *
 from PIL import Image  
 
@@ -34,7 +34,14 @@ def onAppStart(app):
     app.segmentDelaySteps = 0
     app.wordDelaySteps = 0
 
+
+    app.buttonW = app.width * 0.3
+    app.buttonH = app.height * 0.07
+    app.buttonX = (app.width - app.buttonW) / 2
+    app.buttonY = app.height * 0.8
+    
     app.tile = CMUImage(Image.open('wooden-tile.png'))
+    start_onResize(app)
     setBackground(app)
 
 def setBackground(app):
@@ -59,12 +66,54 @@ def setBackground(app):
 
 def start_onResize(app):
     setBackground(app)
+    app.buttonW = app.width * 0.3
+    app.buttonH = app.height * 0.07
+    app.buttonX = (app.width - app.buttonW) / 2
+    app.buttonY = app.height * 0.8
+    app.automateButton = Button(app.buttonX, app.buttonY, app.buttonW, app.buttonH,
+                                fill='goldenrod', fun=startFunction)
+
 
 def game_onResize(app):
     app.cellSize = min((app.width - 2 * app.gridMargin) // app.cols,
                         (app.height - 200) // app.rows)
     app.gridLeft = (app.width - app.cellSize * app.cols) // 2
     setBackground(app)
+
+def startFunction(app):
+    setActiveScreen('game')
+
+
+class Button:
+    def __init__(self, x, y, w, h, fill, fun):
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        self.fill = fill
+        self.fun = fun
+
+    def respondToPress(self, app, mx, my):
+        if self.isPressed(mx, my):
+            self.fun(app)
+
+    def isPressed(self, mx, my):
+        return self.x <= mx <= self.x + self.w and self.y <= my <= self.y + self.h
+
+    def draw(self):
+        radius = self.h / 2  # fully rounded ends
+        drawRect(self.x + radius, self.y, self.w - 2 * radius, self.h, 
+                 fill = self.fill)
+        drawCircle(self.x + radius, self.y + self.h / 2, radius, 
+                   fill = self.fill)
+        drawCircle(self.x + self.w - radius, self.y + self.h / 2, radius, 
+                   fill = self.fill)
+
+        drawLabel('Automate', self.x + self.w * 0.5, self.y + self.h / 2,
+                  size = int(self.h * 0.45), bold = True, fill = 'black',
+                  font = 'monospace')
+
+
 
 
 #https://stackoverflow.com/questions/30969687/use-python-to-open-a-file-in-read-mode
@@ -93,9 +142,6 @@ def drawRoundedGridBackground(app, radius = 20, fillColor = 'darkOliveGreen'):
     drawCircle(bgLeft + radius, bgTop + bgHeight - radius, radius, fill = fillColor)  # bottom-left
     drawCircle(bgLeft + bgWidth - radius, bgTop + bgHeight - radius, radius, fill = fillColor)  # bottom-right
 
-
-
-
 def drawGrid(app):
     drawRoundedGridBackground(app)
     for row in range(app.rows):
@@ -113,13 +159,27 @@ def drawGrid(app):
 
 def start_redrawAll(app):
     drawImage(app.AutoHuntBG, 0, 0)
-    drawLabel('AUTOHUNT', app.width // 2, 160, size = 36, bold = True)
-    drawLabel('automically solve word hunt puzzles', app.width // 2, 200, size = 18)
-    drawLabel('press space to begin', app.width // 2, 260, size = 20)
 
-def start_onKeyPress(app, key):
-    if key == 'space':
-        setActiveScreen('game')
+    titleSize = int(app.height * 0.1)
+    subtitleSize = int(app.height * 0.025)
+
+    drawLabel('AUTOHUNT', app.width // 2, app.height * 0.25,
+              size=titleSize, font='monospace', bold=True, fill=rgb(34, 61, 36))
+
+    drawLabel('complete the grid to hunt all possible words', app.width // 2,
+              app.height * 0.33, size=subtitleSize, fill=rgb(34, 61, 36))
+
+
+    drawRect(0, app.height * 0.95, app.width, app.height, 
+             fill = rgb(50, 50, 50))
+    size = app.height * 0.08
+    drawLabel("LET'S PLAY WORD HUNT!", app.width // 2, app. height * 0.97, 
+              size = int(size * 0.3), fill = 'gainsboro', bold = True)
+
+    app.automateButton.draw()
+    
+def start_onMousePress(app, mx, my):
+    app.automateButton.respondToPress(app, mx, my)
 
 
 def game_onKeyPress(app, key):
@@ -175,8 +235,7 @@ def getGridPosition(app, index):
 
 def game_redrawAll(app):
     drawImage(app.AutoHuntBG, 0, 0)
-    titleSize = int(app.height * 0.09)
-    drawLabel("AUTOHUNT", app.width // 2, 50, size = titleSize, bold = True)
+
     drawGrid(app)
 
     if app.mode == 'countdown':
@@ -226,10 +285,6 @@ def findAllWords(app):
     app.validWordGroups = [group for group in app.validWordGroups if len(group) > 0]
     app.validWordGroups.sort(key=groupLongestWordLength, reverse=True)
     app.validWords = [pair for group in app.validWordGroups for pair in group]
-
-    print("==== FOUND WORDS ====")
-    for word, path in app.validWords:
-        print(word)
 
 def wordLength(pair):
     return len(pair[0])
