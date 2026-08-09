@@ -1,7 +1,3 @@
-#Name: David Pinero-Jacome
-#Andrew ID: dpineroj
-#AutoHunt - Word Hunt Checker and Visualizer
-#31.8.25 
 from cmu_graphics import *
 from PIL import Image  
 import random, string
