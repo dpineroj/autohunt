@@ -739,8 +739,7 @@ class Button:
                     fill = 'black', font = 'monospace')
 
 
-#replicated tree structure from cmu module, with a little more:
-#https://www.aleksandrhovhannisyan.com/blog/python-trie-data-structure/
+
 class TreeNode: #node in prefix tree for storing words
     def __init__(self):
         self.children = dict() #characters to child treeNodes
